@@ -4,53 +4,33 @@
  *  Description:
  **************************************************************************** */
 
-import edu.princeton.cs.algs4.DijkstraAllPairsSP;
-import edu.princeton.cs.algs4.DirectedEdge;
-import edu.princeton.cs.algs4.EdgeWeightedDigraph;
 import edu.princeton.cs.algs4.Picture;
 
 import java.awt.Color;
 import java.util.Arrays;
-import java.util.Iterator;
 
 public class SeamCarver {
 
-    private final Picture picture;
-    private final EdgeWeightedDigraph G;
+    private Picture picture;
+    private double[][] energyMatrix;
+    private int[][] edgeFrom;
+    private double[][] costToReach;
 
     // create a seam carver object based on the given picture
     public SeamCarver(Picture picture) {
         this.picture = picture;
-        this.G = createDigraph();
+        this.energyMatrix = createEnergyMatrix();
     }
 
-    private EdgeWeightedDigraph createDigraph() {
-        EdgeWeightedDigraph digraph = new EdgeWeightedDigraph(picture.height() * picture.width());
+    private double[][] createEnergyMatrix() {
+        double[][] en = new double[picture.height()][picture.width()];
         for (int y = 0; y < picture.height(); y++) {
             for (int x = 0; x < picture.width(); x++) {
-                int leftNeighborX = x - 1;
-                int rightNeighborX = x + 1;
-                int neighborY = y + 1;
-
-                if (!validateIndexByHeight(neighborY)) continue;
-
-                digraph.addEdge(createEdgeFor(x, y, x, neighborY));
-                if (validateIndexByWidth(leftNeighborX))
-                    digraph.addEdge(createEdgeFor(x, y, leftNeighborX, neighborY));
-                if (validateIndexByWidth(rightNeighborX))
-                    digraph.addEdge(createEdgeFor(x, y, rightNeighborX, neighborY));
+                en[y][x] = energy(x, y);
             }
         }
 
-        return digraph;
-    }
-
-    private DirectedEdge createEdgeFor(int vX, int vY, int wX, int wY) {
-        return new DirectedEdge(
-                coordinatesToNodeIndex(vX, vY),
-                coordinatesToNodeIndex(wX, wY),
-                energy(wX, wY)
-        );
+        return en;
     }
 
     private int coordinatesToNodeIndex(int x, int y) {
@@ -89,44 +69,73 @@ public class SeamCarver {
 
     // sequence of indices for horizontal seam
     public int[] findHorizontalSeam() {
-        int[] coordinates = new int[width()];
-        Arrays.fill(coordinates, 0);
-        return coordinates;
+        picture.setOriginLowerLeft();
+        energyMatrix = createEnergyMatrix();
+        int[] verticalSeam = findVerticalSeam();
+        picture.setOriginUpperLeft();
+        energyMatrix = createEnergyMatrix();
+        return verticalSeam;
     }
 
     // sequence of indices for vertical seam
     public int[] findVerticalSeam() {
-        DijkstraAllPairsSP allPairsSP = new DijkstraAllPairsSP(G);
+        edgeFrom = new int[height()][width()];
+        costToReach = new double[height()][width()];
 
-        int shortestPathOrigin = 0;
-        int shortestPathDestination = 0;
-        double shortestPathDistance = Double.POSITIVE_INFINITY;
-        for (int x1 = 0; x1 < width(); x1++) {
-            for (int x2 = 0; x2 < width(); x2++) {
-                int nodeOrigin = coordinatesToNodeIndex(x1, 0);
-                int nodeDest = coordinatesToNodeIndex(x2, height() - 1);
-                double dist = allPairsSP.dist(nodeOrigin, nodeDest);
+        for (double[] arr : costToReach) {
+            Arrays.fill(arr, Double.POSITIVE_INFINITY);
+        }
 
-                if (dist < shortestPathDistance) {
-                    shortestPathDistance = dist;
-                    shortestPathOrigin = nodeOrigin;
-                    shortestPathDestination = nodeDest;
-                }
+        Arrays.fill(costToReach[0], 1000);
+
+        for (int y = 0; y < height() - 1; y++) {
+            for (int x = 0; x < width(); x++) {
+                relaxChildrenOf(x, y);
             }
         }
 
-        Iterable<DirectedEdge> path = allPairsSP.path(shortestPathOrigin, shortestPathDestination);
-        int[] coordinates = new int[height()];
-        coordinates[0] = shortestPathOrigin;
+        double[] pathsCosts = costToReach[height() - 1];
+        int shortestPathDest = -1;
+        double shortestPathCost = Double.POSITIVE_INFINITY;
 
-        Iterator<DirectedEdge> iterator = path.iterator();
-        int count = 1;
-        while (iterator.hasNext()) {
-            DirectedEdge edge = iterator.next();
-            coordinates[count++] = nodeIndexToCoordinateX(edge.to());
+        for (int i = 0; i < pathsCosts.length; i++) {
+            double pathCost = pathsCosts[i];
+            if (pathCost < shortestPathCost) {
+                shortestPathCost = pathCost;
+                shortestPathDest = i;
+            }
         }
 
-        return coordinates;
+        int[] sp = new int[height()];
+        int xCoord = shortestPathDest;
+        sp[height() - 1] = xCoord;
+        for (int i = height() - 2; i >= 0; i--) {
+            sp[i] = edgeFrom[i + 1][sp[i + 1]];
+        }
+
+        return sp;
+    }
+
+    private void relaxChildrenOf(int x, int y) {
+        double currentCostToReach = costToReach[y][x];
+        double currentEnergy = energyMatrix[y][x];
+
+        // i should check costToReach of all children
+        // if i able to provide shortest costToReach
+        // update costToReach and edgeFrom
+
+        // relax left child
+        for (int i = 0; i < 3; i++) {
+            int childX = x - 1 + i;
+            if (childX < 0 || childX > width() - 1) continue;
+
+            double currentCostToReachChild = costToReach[y + 1][childX];
+            double proposingCostToReachChild = currentEnergy + currentCostToReach;
+            if (proposingCostToReachChild < currentCostToReachChild) {
+                costToReach[y + 1][childX] = proposingCostToReachChild;
+                edgeFrom[y + 1][childX] = x;
+            }
+        }
     }
 
     // remove horizontal seam from current picture
