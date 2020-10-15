@@ -12,30 +12,27 @@ import java.util.Arrays;
 public class SeamCarver {
 
     private Picture picture;
-    private double[][] energyMatrix;
-    private int[][] edgeFrom;
-    private double[][] costToReach;
     private boolean isTransposed = false;
 
     // create a seam carver object based on the given picture
     public SeamCarver(Picture picture) {
+        if (picture == null) throw new IllegalArgumentException("Pic can't be null");
         this.picture = new Picture(picture);
-        this.energyMatrix = createEnergyMatrix();
     }
 
     // current picture
     public Picture picture() {
-        return picture;
+        return new Picture(picture);
     }
 
     // width of current picture
     public int width() {
-        return picture().width();
+        return picture.width();
     }
 
     // height of current picture
     public int height() {
-        return picture().height();
+        return picture.height();
     }
 
     // energy of pixel at column x and row y
@@ -94,7 +91,7 @@ public class SeamCarver {
         }
 
         picture = compressedPic;
-        this.energyMatrix = createEnergyMatrix();
+        // this.energyMatrix = createEnergyMatrix();
     }
 
     //  unit testing (optional)
@@ -152,8 +149,9 @@ public class SeamCarver {
     }
 
     private int[] findShortestPath() {
-        edgeFrom = new int[height()][width()];
-        costToReach = new double[height()][width()];
+        double[][] energyMatrix = createEnergyMatrix();
+        int[][] edgeFrom = new int[height()][width()];
+        double[][] costToReach = new double[height()][width()];
 
         for (double[] arr : costToReach) {
             Arrays.fill(arr, Double.POSITIVE_INFINITY);
@@ -163,7 +161,7 @@ public class SeamCarver {
 
         for (int y = 0; y < height() - 1; y++) {
             for (int x = 0; x < width(); x++) {
-                relaxChildrenOf(x, y);
+                relaxChildrenOf(x, y, energyMatrix[y][x], costToReach, edgeFrom);
             }
         }
 
@@ -189,9 +187,9 @@ public class SeamCarver {
         return sp;
     }
 
-    private void relaxChildrenOf(int x, int y) {
+    private void relaxChildrenOf(int x, int y, double currentEnergy,
+                                 double[][] costToReach, int[][] edgeFrom) {
         double currentCostToReach = costToReach[y][x];
-        double currentEnergy = energyMatrix[y][x];
 
         // i should check costToReach of all children
         // if i able to provide shortest costToReach
@@ -240,6 +238,5 @@ public class SeamCarver {
         }
 
         picture = trPic;
-        this.energyMatrix = createEnergyMatrix();
     }
 }
