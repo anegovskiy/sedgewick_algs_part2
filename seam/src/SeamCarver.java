@@ -15,34 +15,12 @@ public class SeamCarver {
     private double[][] energyMatrix;
     private int[][] edgeFrom;
     private double[][] costToReach;
+    private boolean isTransposed = false;
 
     // create a seam carver object based on the given picture
     public SeamCarver(Picture picture) {
-        this.picture = picture;
+        this.picture = new Picture(picture);
         this.energyMatrix = createEnergyMatrix();
-    }
-
-    private double[][] createEnergyMatrix() {
-        double[][] en = new double[picture.height()][picture.width()];
-        for (int y = 0; y < picture.height(); y++) {
-            for (int x = 0; x < picture.width(); x++) {
-                en[y][x] = energy(x, y);
-            }
-        }
-
-        return en;
-    }
-
-    private int coordinatesToNodeIndex(int x, int y) {
-        return y * width() + x;
-    }
-
-    private int nodeIndexToCoordinateX(int nodeIndex) {
-        return nodeIndex % width();
-    }
-
-    private int nodeIndexToCoordinateY(int nodeIndex) {
-        return nodeIndex / width();
     }
 
     // current picture
@@ -69,16 +47,111 @@ public class SeamCarver {
 
     // sequence of indices for horizontal seam
     public int[] findHorizontalSeam() {
-        picture.setOriginLowerLeft();
-        energyMatrix = createEnergyMatrix();
+        transposePicture();
         int[] verticalSeam = findVerticalSeam();
-        picture.setOriginUpperLeft();
-        energyMatrix = createEnergyMatrix();
+        transposePicture();
         return verticalSeam;
     }
 
     // sequence of indices for vertical seam
     public int[] findVerticalSeam() {
+        return findShortestPath();
+    }
+
+    // remove horizontal seam from current picture
+    public void removeHorizontalSeam(int[] seam) {
+        validateParamIsNotNull(seam);
+        validateSeam(seam, false);
+
+        if (height() <= 1) throw new IllegalArgumentException("nothing to remove");
+
+        transposePicture();
+        removeVerticalSeam(seam);
+        transposePicture();
+    }
+
+    // remove vertical seam from current picture
+    public void removeVerticalSeam(int[] seam) {
+        validateParamIsNotNull(seam);
+        validateSeam(seam, true);
+
+        if (width() <= 1) throw new IllegalArgumentException("nothing to remove");
+
+        int width = width();
+        int height = height();
+
+        Picture compressedPic = new Picture(width - 1, height);
+
+        for (int y = 0; y < height; y++) {
+            int seamX = seam[y];
+            for (int x = 0; x < width; x++) {
+                int newX = x;
+                if (seamX == x) continue;
+                if (x > seamX) newX = x - 1;
+
+                compressedPic.setRGB(newX, y, picture.getRGB(x, y));
+            }
+        }
+
+        picture = compressedPic;
+        this.energyMatrix = createEnergyMatrix();
+    }
+
+    //  unit testing (optional)
+    public static void main(String[] args) {
+
+    }
+
+    // Validation
+
+    private void validateIndices(int x, int y) {
+        if (!validateIndexByWidth(x)) throw new IllegalArgumentException("x is out of bounds");
+        if (!validateIndexByHeight(y)) throw new IllegalArgumentException("y is out of bounds");
+    }
+
+    private boolean validateIndexByWidth(int x) {
+        if (x < 0 || x >= width()) return false;
+        return true;
+    }
+
+    private boolean validateIndexByHeight(int y) {
+        if (y < 0 || y >= height()) return false;
+        return true;
+    }
+
+    private void validateParamIsNotNull(Object object) {
+        if (object == null) throw new IllegalArgumentException("Param can't be null");
+    }
+
+    private void validateSeam(int[] seam, boolean isVertical) {
+        int size = isVertical ? height() : width();
+        if (size != seam.length) throw new IllegalArgumentException("seam isn't complete");
+
+        int prevPixel = seam[0];
+        for (int pixel : seam) {
+            if (isVertical) validateIndexByWidth(pixel);
+            else validateIndexByHeight(pixel);
+
+            if (Math.abs(pixel - prevPixel) > 1)
+                throw new IllegalArgumentException("seam isn't complete");
+            prevPixel = pixel;
+        }
+    }
+
+    // Calculation
+
+    private double[][] createEnergyMatrix() {
+        double[][] en = new double[height()][width()];
+        for (int y = 0; y < height(); y++) {
+            for (int x = 0; x < width(); x++) {
+                en[y][x] = energy(x, y);
+            }
+        }
+
+        return en;
+    }
+
+    private int[] findShortestPath() {
         edgeFrom = new int[height()][width()];
         costToReach = new double[height()][width()];
 
@@ -138,64 +211,6 @@ public class SeamCarver {
         }
     }
 
-    // remove horizontal seam from current picture
-    public void removeHorizontalSeam(int[] seam) {
-        validateParamIsNotNull(seam);
-        validateSeam(seam, false);
-
-        if (height() <= 1) throw new IllegalArgumentException("nothing to remove");
-    }
-
-    // remove vertical seam from current picture
-    public void removeVerticalSeam(int[] seam) {
-        validateParamIsNotNull(seam);
-        validateSeam(seam, true);
-
-        if (width() <= 1) throw new IllegalArgumentException("nothing to remove");
-    }
-
-    //  unit testing (optional)
-    public static void main(String[] args) {
-
-    }
-
-    // Validation
-
-    private void validateIndices(int x, int y) {
-        if (!validateIndexByWidth(x)) throw new IllegalArgumentException("x is out of bounds");
-        if (!validateIndexByHeight(y)) throw new IllegalArgumentException("y is out of bounds");
-    }
-
-    private boolean validateIndexByWidth(int x) {
-        if (x < 0 || x >= width()) return false;
-        return true;
-    }
-
-    private boolean validateIndexByHeight(int y) {
-        if (y < 0 || y >= height()) return false;
-        return true;
-    }
-
-    private void validateParamIsNotNull(Object object) {
-        if (object == null) throw new IllegalArgumentException("Param can't be null");
-    }
-
-    private void validateSeam(int[] seam, boolean isVertical) {
-        int size = isVertical ? height() : width();
-        if (size != seam.length) throw new IllegalArgumentException("seam isn't complete");
-
-        int prevPixel = seam[0];
-        for (int pixel : seam) {
-            if (isVertical) validateIndexByWidth(pixel);
-            else validateIndexByHeight(pixel);
-
-            if (pixel - prevPixel > 1) throw new IllegalArgumentException("seam isn't complete");
-            prevPixel = pixel;
-        }
-    }
-
-    // Calculation
-
     private double calculateEnergyOfPixel(int x, int y) {
         double dX = calculateGradient(x - 1, y, x + 1, y);
         double dY = calculateGradient(x, y - 1, x, y + 1);
@@ -209,5 +224,22 @@ public class SeamCarver {
         int gX = secondColor.getGreen() - firstColor.getGreen();
         int bX = secondColor.getBlue() - firstColor.getBlue();
         return Math.pow(rX, 2) + Math.pow(gX, 2) + Math.pow(bX, 2);
+    }
+
+    private void transposePicture() {
+        isTransposed = !isTransposed;
+
+        int width = width();
+        int height = height();
+        Picture trPic = new Picture(height, width);
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                trPic.setRGB(y, x, picture.getRGB(x, y));
+            }
+        }
+
+        picture = trPic;
+        this.energyMatrix = createEnergyMatrix();
     }
 }
