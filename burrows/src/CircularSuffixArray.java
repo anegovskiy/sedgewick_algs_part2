@@ -6,32 +6,60 @@
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class CircularSuffixArray {
 
-    private final List<String> originalSuffixes;
-    private final List<String> sortedSuffixes;
+    private class CircularSuffix implements Comparable<CircularSuffix> {
+        private final String inputString;
+        private final int startIndex;
+
+        CircularSuffix(String inputString, int startIndex) {
+            this.inputString = inputString;
+            this.startIndex = startIndex;
+        }
+
+        public char getChar(int index) {
+            int nextIndex = (startIndex + index) % length;
+            return inputString.charAt(nextIndex);
+        }
+
+        public int compareTo(CircularSuffix o) {
+            // chars compare
+            int count = 0;
+            int res = 0;
+
+            while (count < length && res == 0) {
+                char ownCh = getChar(count);
+                char theirsCh = o.getChar(count);
+                res = Character.compare(ownCh, theirsCh);
+                count++;
+            }
+
+            return res;
+        }
+    }
+
+    private final List<CircularSuffix> originalSuffixes;
+    private final List<CircularSuffix> sortedSuffixes;
     private final int[] indexes;
+    private final int length;
 
     // circular suffix array of s
     public CircularSuffixArray(String s) {
         if (s == null) throw new IllegalArgumentException("s can't be null");
 
-        int length = s.length();
-        originalSuffixes = new ArrayList<String>(length);
-        StringBuilder rotatedStringBuilder = new StringBuilder(s);
-        for (int i = 0; i < length; i++) {
-            String rotatedString = rotatedStringBuilder.toString();
-            originalSuffixes.add(i, rotatedString);
+        String inputString = new String(s);
+        length = inputString.length();
 
-            rotatedStringBuilder.append(rotatedString.charAt(0));
-            rotatedStringBuilder.deleteCharAt(0);
+        originalSuffixes = new ArrayList<CircularSuffix>(length);
+        for (int i = 0; i < length; i++) {
+            CircularSuffix circularSuffix = new CircularSuffix(inputString, i);
+            originalSuffixes.add(i, circularSuffix);
         }
 
-        sortedSuffixes = new ArrayList<String>(originalSuffixes);
-        Collections.sort(sortedSuffixes);
+        sortedSuffixes = new ArrayList<CircularSuffix>(originalSuffixes);
+        sortedSuffixes.sort(CircularSuffix::compareTo);
 
         indexes = new int[length];
         for (int i = 0; i < length; i++) {
@@ -41,7 +69,7 @@ public class CircularSuffixArray {
 
     // length of s
     public int length() {
-        return originalSuffixes.size();
+        return length;
     }
 
     // returns index of ith sorted suffix
@@ -57,5 +85,5 @@ public class CircularSuffixArray {
         System.out.println(circularSuffixArray.sortedSuffixes);
         System.out.println(Arrays.toString(circularSuffixArray.indexes));
     }
-
 }
+

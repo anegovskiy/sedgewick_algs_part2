@@ -24,7 +24,7 @@ public class MoveToFront {
         // Encode data
         while (!BinaryStdIn.isEmpty()) {
             char newChar = BinaryStdIn.readChar(8);
-            byte charIndex = (byte) charSequence.indexOf(newChar);
+            char charIndex = (char) charSequence.indexOf(newChar);
 
             BinaryStdOut.write(charIndex);
             charSequence.remove(charIndex);
@@ -47,7 +47,7 @@ public class MoveToFront {
             // read each 8-bit character i (but treat it as an integer between 0 and 255) from standard input one at a time
             int newCharIndex = BinaryStdIn.readInt(8);
             char newChar = charSequence.get(newCharIndex);
-            
+
             // write the ith character in the sequence;
             BinaryStdOut.write(newChar);
 
