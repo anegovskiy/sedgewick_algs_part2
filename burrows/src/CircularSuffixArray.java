@@ -5,7 +5,6 @@
  **************************************************************************** */
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class CircularSuffixArray {
@@ -38,10 +37,14 @@ public class CircularSuffixArray {
 
             return res;
         }
+
+        public String getValue() {
+            return inputString.substring(0, startIndex) + inputString.substring(startIndex, length);
+        }
     }
 
-    private final List<CircularSuffix> originalSuffixes;
-    private final List<CircularSuffix> sortedSuffixes;
+    // private final List<CircularSuffix> originalSuffixes;
+    // private final List<CircularSuffix> sortedSuffixes;
     private final int[] indexes;
     private final int length;
 
@@ -52,13 +55,13 @@ public class CircularSuffixArray {
         String inputString = new String(s);
         length = inputString.length();
 
-        originalSuffixes = new ArrayList<CircularSuffix>(length);
+        List<CircularSuffix> originalSuffixes = new ArrayList<CircularSuffix>(length);
         for (int i = 0; i < length; i++) {
             CircularSuffix circularSuffix = new CircularSuffix(inputString, i);
             originalSuffixes.add(i, circularSuffix);
         }
 
-        sortedSuffixes = new ArrayList<CircularSuffix>(originalSuffixes);
+        List<CircularSuffix> sortedSuffixes = new ArrayList<CircularSuffix>(originalSuffixes);
         sortedSuffixes.sort(CircularSuffix::compareTo);
 
         indexes = new int[length];
@@ -80,10 +83,7 @@ public class CircularSuffixArray {
 
     // unit testing (required)
     public static void main(String[] args) {
-        CircularSuffixArray circularSuffixArray = new CircularSuffixArray("ABRACADABRA!");
-        System.out.println(circularSuffixArray.originalSuffixes);
-        System.out.println(circularSuffixArray.sortedSuffixes);
-        System.out.println(Arrays.toString(circularSuffixArray.indexes));
+        
     }
 }
 

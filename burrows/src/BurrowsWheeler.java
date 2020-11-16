@@ -6,9 +6,9 @@
 
 import edu.princeton.cs.algs4.BinaryStdIn;
 import edu.princeton.cs.algs4.BinaryStdOut;
+import edu.princeton.cs.algs4.LSD;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class BurrowsWheeler {
@@ -26,8 +26,10 @@ public class BurrowsWheeler {
         char[] chars = new char[length];
         for (int i = 0; i < length; i++) {
             int index = circularSuffixArray.index(i);
+
             if (index == 0) first = i;
             if (index < 1) index = length + index;
+
             char character = inputString.charAt(index - 1);
             chars[i] = character;
         }
@@ -42,30 +44,28 @@ public class BurrowsWheeler {
     public static void inverseTransform() {
 
         // invert the message from t[] and first
-
         int first = BinaryStdIn.readInt();
         String encodedInput = BinaryStdIn.readString();
 
-        char[] chars = encodedInput.toCharArray();
-        Arrays.sort(chars);
-        String sortedInput = String.valueOf(chars);
         int length = encodedInput.length();
+        int[] chars = new int[length];
+        for (int i = 0; i < length; i++) {
+            chars[i] = encodedInput.charAt(i);
+        }
+
+        LSD.sort(chars);
         List<Integer> next = new ArrayList<>();
+        int[] nextFromForChar = new int[256];
 
         // recreate next array
         for (int i = 0; i < length; i++) {
-            boolean exists = true;
-            int fromIndex = 0;
             int indexInEncoded = -1;
-            char sortedChar = sortedInput.charAt(i);
+            char sortedChar = (char) chars[i];
+            int fromIndex = nextFromForChar[sortedChar];
 
-            while (exists) {
-                indexInEncoded = encodedInput.indexOf(sortedChar, fromIndex);
-                exists = next.contains(indexInEncoded);
-                fromIndex = indexInEncoded + 1;
-            }
-
+            indexInEncoded = encodedInput.indexOf(sortedChar, fromIndex);
             next.add(i, indexInEncoded);
+            nextFromForChar[sortedChar] = indexInEncoded + 1;
         }
 
         int count = 0;
